@@ -124,7 +124,6 @@ def parse_isd(df: pd.DataFrame) -> pd.DataFrame:
     # Basic identifiers
     df["datetime"] = pd.to_datetime(df["DATE"], utc=True, errors="coerce")
     df["station"] = df.get("STATION")
-    df["airport"] = df.get("CALL_SIGN")  # often ICAO like KDAL; may be NaN
     df["lat"] = _to_num(df.get("LATITUDE"))
     df["lon"] = _to_num(df.get("LONGITUDE"))
     df["elev_m"] = _to_num(df.get("ELEVATION"))
@@ -229,7 +228,11 @@ def clean_isd(parsed: pd.DataFrame) -> pd.DataFrame:
 def process_file(path_in: str, out_dir: str) -> str:
     fname = os.path.basename(path_in)
     print(f"\n▶ Processing {fname}")
+
     df = pd.read_csv(path_in)
+
+    airport_code = fname.split("_")[0]
+    df["airport"] = airport_code  # override ICAO entirely (CALL_SIGN unreliable)
 
     # Guard: ensure expected core columns exist
     missing_core = [c for c in CORE_COMPOUND if c not in df.columns]
@@ -239,7 +242,6 @@ def process_file(path_in: str, out_dir: str) -> str:
     parsed = parse_isd(df)
     cleaned = clean_isd(parsed)
 
-    # Basic summary
     n_raw = len(df)
     n_clean = len(cleaned)
     null_rates = cleaned.isna().mean().round(3)
@@ -249,13 +251,14 @@ def process_file(path_in: str, out_dir: str) -> str:
               'wind_speed_ms','vis_m','ceiling_m','temp_c','slp_hpa','precip_mm_1h'
           ]))
 
-    # Output file name: keep base and append _clean
     base, ext = os.path.splitext(fname)
     out_path = os.path.join(out_dir, f"{base}_clean.csv")
     os.makedirs(out_dir, exist_ok=True)
     cleaned.to_csv(out_path, index=False)
     print(f"  ✓ Wrote {out_path}")
+
     return out_path
+
 
 
 def process_all(raw_dir: str, out_dir: str, pattern: str = "*.csv") -> List[str]:

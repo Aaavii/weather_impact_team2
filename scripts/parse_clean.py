@@ -84,7 +84,7 @@ def parse_isd(df: pd.DataFrame) -> pd.DataFrame:
     # Wind: WND = dir (deg), speed (0.1 m/s), code, quality
     w = _split_tokens(df, "WND", 4)
     df["wind_dir_deg"] = _to_num(w[0])
-    df["wind_speed_ms"] = _to_num(w[1]) / 10.0
+    df["wind_speed_ms"] = _to_num(w[1])
     # 999 usually indicates missing in dir; also treat speeds >= 9999 as missing
     df.loc[df["wind_dir_deg"] == 999, "wind_dir_deg"] = pd.NA
     df.loc[df["wind_speed_ms"] >= 999, "wind_speed_ms"] = pd.NA
